@@ -1,0 +1,36 @@
+package com.raju.activitycenter;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.*;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
+
+public class MainActivity extends Activity {
+    final int bg=Color.rgb(245,247,248), green=Color.rgb(0,150,112), ink=Color.rgb(22,29,33), muted=Color.rgb(139,153,161);
+    LinearLayout dates, history; TextView monthTitle, bigDay; Calendar selected=Calendar.getInstance();
+    int dp(float n){return (int)(n*getResources().getDisplayMetrics().density+.5f);} 
+    GradientDrawable shape(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
+    TextView label(String s,int size,int color,boolean bold){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(color);if(bold)t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);return t;}
+    LinearLayout.LayoutParams lp(int w,int h){return new LinearLayout.LayoutParams(w<0?w:dp(w),h<0?h:dp(h));}
+    @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(bg);getWindow().setNavigationBarColor(bg);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        selected.set(Calendar.HOUR_OF_DAY,0);selected.set(Calendar.MINUTE,0);selected.set(Calendar.SECOND,0);selected.set(Calendar.MILLISECOND,0);
+        LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(14),dp(8),dp(14),dp(8));root.setBackgroundColor(bg);setContentView(root);
+        LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);header.setPadding(dp(5),dp(10),dp(5),dp(12));TextView back=label("‹",36,ink,false);header.addView(back,lp(40,48));back.setOnClickListener(v->finish());TextView title=label("Activity Center",25,ink,true);LinearLayout.LayoutParams tl=lp(0,-2);tl.weight=1;header.addView(title,tl);header.addView(label("☷",25,ink,true));root.addView(header);
+        LinearLayout panel=new LinearLayout(this);panel.setOrientation(1);panel.setPadding(dp(16),dp(14),dp(16),dp(12));panel.setBackground(shape(Color.WHITE,26));root.addView(panel,lp(-1,-2));
+        LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);bigDay=label(new SimpleDateFormat("EEEE",Locale.ENGLISH).format(selected.getTime()),31,ink,true);row.addView(bigDay,new LinearLayout.LayoutParams(0,-2,1));monthTitle=label(new SimpleDateFormat("MMMM yyyy",Locale.ENGLISH).format(selected.getTime()),19,ink,true);row.addView(monthTitle);panel.addView(row);
+        HorizontalScrollView hsv=new HorizontalScrollView(this);hsv.setHorizontalScrollBarEnabled(false);dates=new LinearLayout(this);dates.setPadding(0,dp(12),0,dp(2));hsv.addView(dates);panel.addView(hsv);rebuildDates();
+        ScrollView sv=new ScrollView(this);sv.setFillViewport(false);LinearLayout.LayoutParams slp=new LinearLayout.LayoutParams(-1,0,1);slp.topMargin=dp(12);slp.bottomMargin=dp(8);root.addView(sv,slp);history=new LinearLayout(this);history.setOrientation(1);sv.addView(history);refreshHistory();
+        LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(5),dp(6),dp(5),dp(6));nav.setBackground(shape(Color.WHITE,30));root.addView(nav,lp(-1,66));String[] tabs={"●\nChats","◎\nContacts","⚙\nSettings","◉\nProfile"};for(int i=0;i<4;i++){TextView t=label(tabs[i],12,i==0?green:muted,true);t.setGravity(Gravity.CENTER);nav.addView(t,new LinearLayout.LayoutParams(0,-1,1));}
+    }
+    void rebuildDates(){dates.removeAllViews();Calendar c=(Calendar)selected.clone();c.add(Calendar.DAY_OF_MONTH,-4);for(int i=0;i<13;i++){final Calendar d=(Calendar)c.clone();boolean active=same(d,selected);LinearLayout chip=new LinearLayout(this);chip.setOrientation(1);chip.setGravity(Gravity.CENTER);chip.setPadding(dp(6),dp(7),dp(6),dp(7));if(active)chip.setBackground(shape(0xFFE4F5EF,17));chip.addView(label(new SimpleDateFormat("MMM",Locale.ENGLISH).format(d.getTime()).toUpperCase(),10,muted,true));chip.addView(label(""+d.get(Calendar.DAY_OF_MONTH),19,active?green:ink,true));chip.addView(label(new SimpleDateFormat("EEE",Locale.ENGLISH).format(d.getTime()).toUpperCase(),10,active?green:muted,true));LinearLayout.LayoutParams p=lp(57,78);p.rightMargin=dp(4);dates.addView(chip,p);chip.setOnClickListener(v->{selected=(Calendar)d.clone();bigDay.setText(new SimpleDateFormat("EEEE",Locale.ENGLISH).format(selected.getTime()));monthTitle.setText(new SimpleDateFormat("MMMM yyyy",Locale.ENGLISH).format(selected.getTime()));rebuildDates();refreshHistory();});c.add(Calendar.DAY_OF_MONTH,1);}}
+    boolean same(Calendar a,Calendar b){return a.get(Calendar.YEAR)==b.get(Calendar.YEAR)&&a.get(Calendar.DAY_OF_YEAR)==b.get(Calendar.DAY_OF_YEAR);}
+    void refreshHistory(){history.removeAllViews();String today=new SimpleDateFormat("yyyyMMdd",Locale.ENGLISH).format(selected.getTime());String now=new SimpleDateFormat("yyyyMMdd",Locale.ENGLISH).format(Calendar.getInstance().getTime());if(!today.equals(now)){TextView empty=label("No activity for this date",15,muted,false);empty.setGravity(Gravity.CENTER);empty.setPadding(0,dp(40),0,dp(40));history.addView(empty);return;}String[][] data={{"D","Design Hub Community","Group · 128 members","New design resources are available","10:42 AM"},{"A","Alex Morgan","Personal chat","Thanks! I'll review the update today.","09:18 AM"},{"U","UI/UX Creators","Group · 2.4K members","Shared 3 photos and 1 file","Yesterday"},{"P","Project Launch Team","Group · 36 members","Meeting notes have been uploaded","Yesterday"}};for(String[] x:data){LinearLayout card=new LinearLayout(this);card.setOrientation(1);card.setPadding(dp(14),dp(13),dp(14),dp(13));card.setBackground(shape(Color.WHITE,22));LinearLayout.LayoutParams cp=lp(-1,-2);cp.bottomMargin=dp(9);history.addView(card,cp);LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);TextView av=label(x[0],21,ink,true);av.setGravity(Gravity.CENTER);av.setBackground(shape(0xFFE4F5EF,16));top.addView(av,lp(48,48));LinearLayout names=new LinearLayout(this);names.setOrientation(1);names.setPadding(dp(11),0,0,0);names.addView(label(x[1],16,ink,true));names.addView(label(x[2],11,muted,false));top.addView(names,new LinearLayout.LayoutParams(0,-2,1));top.addView(label(x[4],11,muted,false));card.addView(top);TextView preview=label(x[3],13,0xFF58666D,false);preview.setPadding(dp(59),dp(8),0,dp(8));card.addView(preview);LinearLayout actions=new LinearLayout(this);actions.setGravity(Gravity.RIGHT);TextView previewBtn=label("PREVIEW",10,green,true);TextView go=label("GO  ›",10,green,true);previewBtn.setPadding(dp(12),dp(7),dp(12),dp(7));go.setPadding(dp(12),dp(7),dp(5),dp(7));actions.addView(previewBtn);actions.addView(go);card.addView(actions);previewBtn.setOnClickListener(v->new android.app.AlertDialog.Builder(this).setTitle(x[1]).setMessage(x[3]).setPositiveButton("Close",null).show());go.setOnClickListener(v->Toast.makeText(this,"Demo only: real Telegram chat is not connected",Toast.LENGTH_SHORT).show());}}
+          }
+                                                     
